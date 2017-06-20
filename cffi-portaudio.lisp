@@ -11,13 +11,13 @@
 
 (define-condition portaudio-error (error)
   ((code :initarg :code
-	 :reader error-code
-	 :type fixnum))
+         :reader error-code
+         :type fixnum))
   (:report (lambda (condition stream)
-	     (let ((error-code (error-code condition)))
-	       (format stream "PortAudio error ~A ~A"
-		       error-code
-		       (pa-get-error-text error-code)))))
+             (let ((error-code (error-code condition)))
+               (format stream "PortAudio error ~A ~A"
+                       error-code
+                       (pa-get-error-text error-code)))))
   (:documentation "An error that is signalled when PortAudio returns
 an error code."))
 
@@ -47,11 +47,11 @@ an error code."))
   (user-data :pointer))
 
 (defun open-stream (stream* input-parameters output-parameters
-		    sample-rate frames-per-buffer stream-flags
-		    stream-callback user-data)
+                    sample-rate frames-per-buffer stream-flags
+                    stream-callback user-data)
   (check-error-code (pa-open-stream stream* input-parameters output-parameters
-				    sample-rate frames-per-buffer stream-flags
-				    stream-callback user-data)))
+                                    sample-rate frames-per-buffer stream-flags
+                                    stream-callback user-data)))
 
 (defcfun ("Pa_OpenDefaultStream" pa-open-default-stream) pa-error
   (stream (:pointer :pointer))
@@ -64,17 +64,17 @@ an error code."))
   (user-data :pointer))
 
 (defun open-default-stream (stream num-input-channels num-output-channels
-			    sample-format sample-rate frames-per-buffer
-			    stream-callback user-data)
+                            sample-format sample-rate frames-per-buffer
+                            stream-callback user-data)
   "Creates an audio stream on the default device."
   (check-error-code (pa-open-default-stream stream
-					    num-input-channels
-					    num-output-channels
-					    sample-format
-					    sample-rate
-					    frames-per-buffer
-					    stream-callback
-					    user-data)))
+                                            num-input-channels
+                                            num-output-channels
+                                            sample-format
+                                            sample-rate
+                                            frames-per-buffer
+                                            stream-callback
+                                            user-data)))
 
 (defcfun ("Pa_CloseStream" pa-close-stream) pa-error
   (stream :pointer))
@@ -113,28 +113,28 @@ an error code."))
   (check-error-code (pa-is-stream-active stream)))
 
 (defcallback cb :int ((input :pointer)
-		      (output :pointer)
-		      (frame-count :unsigned-long)
-		      (time-info (:pointer (:struct pa-stream-callback-time-info)))
-		      (status-flags pa-stream-callback-flags)
-		      (user-data :pointer))
+                      (output :pointer)
+                      (frame-count :unsigned-long)
+                      (time-info (:pointer (:struct pa-stream-callback-time-info)))
+                      (status-flags pa-stream-callback-flags)
+                      (user-data :pointer))
   (declare (ignore input time-info status-flags user-data))
   (print "callback")
   (force-output)
   #+nil(dotimes (i frame-count)
-	 (setf (mem-aref output :float i) (cos i)))
+         (setf (mem-aref output :float i) (cos i)))
   0)
 
 (defun stream-parameters (params
-			  &key (device 0) (channel-count 2)
-			    (sample-format +pa-float-32+)
-			    (suggested-latency 0.1d0)
-			    (host-api-specific-stream-info (null-pointer)))
+                          &key (device 0) (channel-count 2)
+                            (sample-format +pa-float-32+)
+                            (suggested-latency 0.1d0)
+                            (host-api-specific-stream-info (null-pointer)))
   (flet ((set-slot (slot value)
-	   (setf (foreign-slot-value params
-				     '(:struct pa-stream-parameters)
-				     slot)
-		 value)))
+           (setf (foreign-slot-value params
+                                     '(:struct pa-stream-parameters)
+                                     slot)
+                 value)))
     (set-slot 'device device)
     (set-slot 'channel-count channel-count)
     (set-slot 'sample-format sample-format)
@@ -144,23 +144,23 @@ an error code."))
 (defun test (&optional (rate 48000) (latency 0.005) (flags 0))
   (initialize)
   (with-foreign-objects ((stream* :pointer)
-			 (input-params '(:struct pa-stream-parameters))
-			 (output-params '(:struct pa-stream-parameters)))
+                         (input-params '(:struct pa-stream-parameters))
+                         (output-params '(:struct pa-stream-parameters)))
     (setf (mem-ref stream* :pointer) (null-pointer))
     (print (mem-ref stream* :pointer))
     #+nil(open-default-stream stream* 0 2 +pa-float-32+
-			      (coerce rate 'double-float)
-			      (floor (* rate latency) 1000)
-			      (callback cb)
-			      (null-pointer))
+                              (coerce rate 'double-float)
+                              (floor (* rate latency) 1000)
+                              (callback cb)
+                              (null-pointer))
     (stream-parameters input-params)
     (stream-parameters output-params)
     (open-stream stream* (null-pointer) output-params
-		 (coerce rate 'double-float)
-		 (floor (* rate latency))
-		 flags
-		 (get-callback 'cb)
-		 (null-pointer))
+                 (coerce rate 'double-float)
+                 (floor (* rate latency))
+                 flags
+                 (get-callback 'cb)
+                 (null-pointer))
     (let ((stream (mem-ref stream* :pointer)))
       (print stream)
       (start-stream stream)
